@@ -1,6 +1,6 @@
 /* Usando Arduino Uno */
 /* Using Arduino Uno */
-
+ 
 #include <SPI.h>
 #include <MFRC522.h>         // Biblioteca RFID / RFID library
 #include <SoftwareSerial.h>  // Biblioteca para comunicação Bluetooth HC-05 / HC-05 Bluetooth communication library
