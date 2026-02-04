@@ -1,6 +1,6 @@
 /* Usando Arduino Uno */
 /* Using Arduino Uno */
- 
+
 #include <SPI.h>
 #include <MFRC522.h>         // Biblioteca RFID / RFID library
 #include <SoftwareSerial.h>  // Biblioteca para comunicação Bluetooth HC-05 / HC-05 Bluetooth communication library
@@ -88,9 +88,9 @@ void setup() {
   // Inicialização dos produtos cadastrados
   // Registered products initialization
 
-  product[0] = { 21.40, "CARROT TRAY - 0.99lb", "A3.F1.C9.B6" };
-  product[1] = { 4.05,  "POTATO PACKET - 2.2lb", "4D.8E.F1.E4" };
-  product[2] = { 4.00,  "BEETROOT PACKET - 2.2lb", "E9.4B.3D.C1" };
+  product[0] = { 3.99, "CARROT", "B6.63.7B.AC" };
+  product[1] = { 4.05, "POTATO", "49.67.E1.5D" };
+  product[2] = { 4.00, "BEETROOT", "E6.C6.6A.AC" };
 
   // Inicialização do botão de reset e LED indicador
   // Reset button and indicator LED initialization
@@ -106,8 +106,19 @@ void loop() {
 
   unsigned long currentTime = millis();
 
+
+
   if (currentTime - previusTime >= intervalTime)
     previusTime = currentTime;
+
+  // Botão para finalizar compra e enviar nota fiscal
+  // Button to finalize purchase and send receipt
+
+  if (digitalRead(BUTTON_RST) == LOW) {
+    SendToConnectedDevice();
+    ResetSession();
+    delay(300);  // Debounce simples / Simple debounce
+  }
 
   // Verifica se há uma nova tag RFID presente
   // Checks if a new RFID tag is present
@@ -141,26 +152,19 @@ void loop() {
 
   for (int i = 0; i < qnt; i++) {
     if (id_key == product[i].id_product) {
-      ShowOnDisplay(&product[i]);
+
       totalProducts++;
       totalCost += product[i].price;
+
+      ShowOnDisplay(&product[i]);
 
       // Pisca o LED para indicar leitura válida
       // LED blink to indicate valid reading
 
       digitalWrite(LED, HIGH);
-      delay(200);
+      delay(500);
       digitalWrite(LED, LOW);
     }
-  }
-
-  // Botão para finalizar compra e enviar nota fiscal
-  // Button to finalize purchase and send receipt
-
-  if (digitalRead(BUTTON_RST) == LOW) {
-    SendToConnectedDevice();
-    ResetSession();
-    delay(300);  // Debounce simples / Simple debounce
   }
 }
 
@@ -175,17 +179,20 @@ void ShowOnDisplay(Product *p) {
   // Header
 
   displayI2C.setCursor(0, 0);
-  displayI2C.print("-|LacostineLJ|-");
+  displayI2C.print("-|LacostineLJ|--");
 
   // Exibe informações do produto se existir
   // Displays product information if available
 
   if (p != nullptr) {
     displayI2C.setCursor(0, 1);
+    displayI2C.print("Nome: ");
     displayI2C.print(p->name);
     displayI2C.setCursor(0, 2);
+    displayI2C.print("Preco: ");
     displayI2C.print(p->price);
     displayI2C.setCursor(0, 3);
+    displayI2C.print("ID: ");
     displayI2C.print(p->id_product);
   }
 
@@ -196,14 +203,14 @@ void ShowOnDisplay(Product *p) {
   displayI2C.print("Products: ");
   displayI2C.print(totalProducts);
   displayI2C.setCursor(0, 5);
-  displayI2C.print("Total Cost: ");
+  displayI2C.print("TotalCost: ");
   displayI2C.print(totalCost);
 
   // Rodapé
   // Footer
 
   displayI2C.setCursor(0, 6);
-  displayI2C.print("-|LacostineLJ|-");
+  displayI2C.print("-|LacostineLJ|--");
 }
 
 // Função para enviar nota fiscal via Bluetooth
@@ -212,9 +219,9 @@ void ShowOnDisplay(Product *p) {
 void SendToConnectedDevice() {
 
   BT_HC_05.println(F("-|Fiscal_Note|-"));
-  BT_HC_05.println(F("Products: "));
+  BT_HC_05.print(F("Products: "));
   BT_HC_05.println(totalProducts);
-  BT_HC_05.println(F("Total Cost: "));
+  BT_HC_05.print(F("TotalCost: "));
   BT_HC_05.println(totalCost);
   BT_HC_05.println(F("-|LacostineLJ|-"));
 }
@@ -223,11 +230,10 @@ void SendToConnectedDevice() {
 // Function to reset the purchase session
 
 void ResetSession() {
-
   totalProducts = 0;
   totalCost = 0;
 
   displayI2C.clear();
-  displayI2C.setCursor(0, 2);
+  displayI2C.setCursor(0, 3);
   displayI2C.print("Session Reset");
 }
